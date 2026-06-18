@@ -27,6 +27,7 @@ const run = async () => {
     await client.connect();
     const database = client.db("recipe");
     const recipeCollection = database.collection("allrecipe");
+    const BrowesRecipe = database.collection("recipes");
 
     //   popular recipe
 
@@ -55,6 +56,20 @@ const run = async () => {
         res.send(recipe);
       } catch (error) {
         res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // get all recipes api
+
+    app.get("/api/all-recipe", async (req, res) => {
+      try {
+        const data = BrowesRecipe.find();
+        const result = await data.toArray();
+        res.send(result);
+      } catch (error) {
+        res
+          .status(500)
+          .send({ message: "Error fetching recipes", error: error.message });
       }
     });
 
