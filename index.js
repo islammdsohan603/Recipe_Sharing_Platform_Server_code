@@ -26,8 +26,8 @@ const run = async () => {
   try {
     await client.connect();
     const database = client.db("recipe");
-    const recipeCollection = database.collection("allrecipe");
-    const BrowesRecipe = database.collection("recipes");
+    // const recipeCollection = database.collection("allrecipe");
+    const recipeCollection = database.collection("recipes");
 
     //   popular recipe
 
@@ -63,13 +63,33 @@ const run = async () => {
 
     app.get("/api/all-recipe", async (req, res) => {
       try {
-        const data = BrowesRecipe.find();
+        const data = recipeCollection.find();
         const result = await data.toArray();
         res.send(result);
       } catch (error) {
         res
           .status(500)
           .send({ message: "Error fetching recipes", error: error.message });
+      }
+    });
+
+    // get details recipe api
+
+    app.get("/api/details/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await recipeCollection.findOne(query);
+        if (!result) {
+          return res.status(404).send({ message: "Recipe not found" });
+        }
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          message: "Invalid ID or Server Error",
+          error: error.message,
+        });
       }
     });
 
