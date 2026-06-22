@@ -2,7 +2,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const express = require("express");
 const cors = require("cors");
-const { configDotenv } = require("dotenv");
 
 const app = express();
 
@@ -11,7 +10,6 @@ app.use(cors());
 app.use(express.json());
 
 const uri = process.env.MONGO_DB_URI;
-
 const port = process.env.PORT;
 
 const client = new MongoClient(uri, {
@@ -26,11 +24,16 @@ const run = async () => {
   try {
     await client.connect();
     const database = client.db("recipe");
-    // const recipeCollection = database.collection("allrecipe");
+
     const recipeCollection = database.collection("recipes");
+    const userCollection = database.collection("user");
+    const favoritesCollection = database.collection("favorites");
 
-    //   popular recipe
+    // ============================================
+    // PUBLIC RECIPE ENDPOINTS
+    // ============================================
 
+    // Popular recipes (sorted by likes)
     app.get("/api/recipe", async (req, res) => {
       try {
         const recipes = await recipeCollection
@@ -38,15 +41,13 @@ const run = async () => {
           .sort({ likesCount: -1 })
           .limit(4)
           .toArray();
-
         res.send(recipes);
       } catch (error) {
         res.status(500).send({ message: "Server error", error: error.message });
       }
     });
 
-    // Featured recipe get api
-
+    // Featured recipes
     app.get("/api/featured-recipe", async (req, res) => {
       try {
         const recipe = await recipeCollection
@@ -59,8 +60,7 @@ const run = async () => {
       }
     });
 
-    // get all recipes api
-
+    // All recipes
     app.get("/api/all-recipe", async (req, res) => {
       try {
         const data = recipeCollection.find();
@@ -73,8 +73,7 @@ const run = async () => {
       }
     });
 
-    // get details recipe api
-
+    // Recipe details by ID
     app.get("/api/details/:id", async (req, res) => {
       try {
         const id = req.params.id;
@@ -83,7 +82,6 @@ const run = async () => {
         if (!result) {
           return res.status(404).send({ message: "Recipe not found" });
         }
-
         res.send(result);
       } catch (error) {
         res.status(500).send({
