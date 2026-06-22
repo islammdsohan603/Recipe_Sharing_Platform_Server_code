@@ -289,6 +289,128 @@ const run = async () => {
       }
     });
 
+    // ============================================
+    // ADMIN ENDPOINTS
+    // ============================================
+
+    // Get all users
+    app.get("/api/admin/users", async (req, res) => {
+      try {
+        const users = await userCollection.find().toArray();
+        res.send(users);
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // Update user (role, premium status)
+    app.patch("/api/admin/users/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updateData = req.body;
+        const result = await userCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updateData },
+        );
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // Delete user
+    app.delete("/api/admin/users/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await userCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // Get all recipes (admin)
+    app.get("/api/admin/recipes", async (req, res) => {
+      try {
+        const recipes = await recipeCollection
+          .find()
+          .sort({ createdAt: -1 })
+          .toArray();
+        res.send(recipes);
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // Delete recipe (admin)
+    app.delete("/api/admin/recipes/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await recipeCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // Admin overview stats
+    app.get("/api/admin/stats", async (req, res) => {
+      try {
+        const totalUsers = await userCollection.countDocuments();
+        const totalRecipes = await recipeCollection.countDocuments();
+        const premiumMembers = await userCollection.countDocuments({
+          isPremium: true,
+        });
+        const totalFavorites = await favoritesCollection.countDocuments();
+
+        res.send({
+          totalUsers,
+          totalRecipes,
+          premiumMembers,
+          totalFavorites,
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    // Admin reports
+    app.get("/api/admin/reports", async (req, res) => {
+      try {
+        // Recipes by category
+        const recipesByCategory = await recipeCollection
+          .aggregate([
+            { $group: { _id: "$category", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ])
+          .toArray();
+
+        // Top liked recipes
+        const topRecipes = await recipeCollection
+          .find()
+          .sort({ likesCount: -1 })
+          .limit(5)
+          .toArray();
+
+        // Total stats
+        const totalUsers = await userCollection.countDocuments();
+        const totalRecipes = await recipeCollection.countDocuments();
+
+        res.send({
+          recipesByCategory,
+          topRecipes,
+          totalUsers,
+          totalRecipes,
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
